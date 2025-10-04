@@ -1,0 +1,561 @@
+<script type="text/javascript">
+        var gk_isXlsx = false;
+        var gk_xlsxFileLookup = {};
+        var gk_fileData = {};
+        function filledCell(cell) {
+          return cell !== '' && cell != null;
+        }
+        function loadFileData(filename) {
+        if (gk_isXlsx && gk_xlsxFileLookup[filename]) {
+            try {
+                var workbook = XLSX.read(gk_fileData[filename], { type: 'base64' });
+                var firstSheetName = workbook.SheetNames[0];
+                var worksheet = workbook.Sheets[firstSheetName];
+
+                // Convert sheet to JSON to filter blank rows
+                var jsonData = XLSX.utils.sheet_to_json(worksheet, { header: 1, blankrows: false, defval: '' });
+                // Filter out blank rows (rows where all cells are empty, null, or undefined)
+                var filteredData = jsonData.filter(row => row.some(filledCell));
+
+                // Heuristic to find the header row by ignoring rows with fewer filled cells than the next row
+                var headerRowIndex = filteredData.findIndex((row, index) =>
+                  row.filter(filledCell).length >= filteredData[index + 1]?.filter(filledCell).length
+                );
+                // Fallback
+                if (headerRowIndex === -1 || headerRowIndex > 25) {
+                  headerRowIndex = 0;
+                }
+
+                // Convert filtered JSON back to CSV
+                var csv = XLSX.utils.aoa_to_sheet(filteredData.slice(headerRowIndex)); // Create a new sheet from filtered array of arrays
+                csv = XLSX.utils.sheet_to_csv(csv, { header: 1 });
+                return csv;
+            } catch (e) {
+                console.error(e);
+                return "";
+            }
+        }
+        return gk_fileData[filename] || "";
+        }
+        </script><!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>(Name) - Delicious Eats</title>
+    <meta name="description" content="Best restaurant in your city. Order online for delivery or make reservations.">
+    <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
+    <script type="text/javascript">
+        (function() {
+            emailjs.init({
+              publicKey: "YOUR_PUBLIC_KEY",
+            });
+        })();
+    </script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: #FFF8E1; /* Creamy background for warmth */
+            color: #333333; /* Dark text for readability */
+            -webkit-overflow-scrolling: touch; /* For smooth scrolling on iOS */
+        }
+
+        header {
+            position: relative;
+            height: 55vh; /* Slightly reduced for tighter layout */
+            color: #FFFFFF; /* White text for contrast */
+            text-align: center;
+            padding-top: 15vh; /* Reduced padding for less space */
+            overflow: hidden;
+        }
+
+        header h1 {
+            color: #FFFFFF; /* White for restaurant name readability */
+            margin: 0; /* Minimize spacing */
+        }
+
+        .carousel {
+            position: relative;
+            width: 100%;
+            height: 100%;
+        }
+
+        .carousel img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            position: absolute;
+            top: 0;
+            left: 0;
+            opacity: 0;
+            transition: opacity 1s ease-in-out;
+        }
+
+        .carousel img.active {
+            opacity: 1;
+        }
+
+        .carousel::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.5); /* Dark overlay for readability */
+            z-index: 1;
+        }
+
+        .carousel-content {
+            position: relative;
+            z-index: 2;
+        }
+
+        .carousel-arrow {
+            position: absolute;
+            top: 50%;
+            transform: translateY(-50%);
+            background: rgba(0,0,0,0.5);
+            color: #FFFFFF;
+            border: none;
+            padding: 10px;
+            cursor: pointer;
+            font-size: 24px;
+            z-index: 2;
+        }
+
+        .carousel-arrow.left {
+            left: 10px;
+        }
+
+        .carousel-arrow.right {
+            right: 10px;
+        }
+
+        .order-now-btn {
+            display: inline-block;
+            background: #FF5733; /* Orange CTA */
+            color: #FFFFFF;
+            padding: 10px 20px;
+            text-decoration: none;
+            border-radius: 5px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .order-now-btn::before,
+        .order-now-btn::after,
+        .order-now-btn span::before,
+        .order-now-btn span::after {
+            content: '';
+            position: absolute;
+            z-index: 1;
+        }
+
+        .order-now-btn::before {
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 2px;
+            background: linear-gradient(to right, transparent, #FFB3A7); /* Fading trail */
+            animation: borderTop 2s linear infinite;
+        }
+
+        .order-now-btn::after {
+            top: 0;
+            right: 0;
+            width: 2px;
+            height: 100%;
+            background: linear-gradient(to bottom, transparent, #FFB3A7); /* Fading trail */
+            animation: borderRight 2s linear infinite;
+            animation-delay: 0.5s;
+        }
+
+        .order-now-btn span::before {
+            bottom: 0;
+            right: 0;
+            width: 100%;
+            height: 2px;
+            background: linear-gradient(to left, transparent, #FFB3A7); /* Fading trail */
+            animation: borderBottom 2s linear infinite;
+            animation-delay: 1s;
+        }
+
+        .order-now-btn span::after {
+            bottom: 0;
+            left: 0;
+            width: 2px;
+            height: 100%;
+            background: linear-gradient(to top, transparent, #FFB3A7); /* Fading trail */
+            animation: borderLeft 2s linear infinite;
+            animation-delay: 1.5s;
+        }
+
+        .order-now-btn span {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+        }
+
+        @keyframes borderTop {
+            0% { transform: translateX(-100%); }
+            100% { transform: translateX(100%); }
+        }
+
+        @keyframes borderRight {
+            0% { transform: translateY(-100%); }
+            100% { transform: translateY(100%); }
+        }
+
+        @keyframes borderBottom {
+            0% { transform: translateX(100%); }
+            100% { transform: translateX(-100%); }
+        }
+
+        @keyframes borderLeft {
+            0% { transform: translateY(100%); }
+            100% { transform: translateY(-100%); }
+        }
+
+        nav {
+            background: #333333; /* Dark gray nav bar */
+            color: #FFFFFF;
+            padding: 10px; /* Reduced for tighter spacing */
+            text-align: center;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            margin-bottom: 0; /* No gap below nav */
+        }
+
+        nav a {
+            color: #FFFFFF;
+            margin: 0 20px;
+            text-decoration: none;
+            font-weight: bold;
+        }
+
+        nav a:hover {
+            color: #FF5733; /* Orange hover effect */
+        }
+
+        section {
+            padding: 30px 20px; /* Slightly reduced for balance */
+            text-align: center;
+        }
+
+        h2 {
+            color: #333333;
+            margin-top: 0; /* Minimize spacing */
+        }
+
+        .menu-item {
+            display: inline-block;
+            width: 30%;
+            margin: 10px;
+            background: #FFFFFF; /* White card for menu items */
+            border-radius: 10px;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+            padding: 15px;
+            transition: transform 0.2s; /* Smooth hover effect */
+        }
+
+        .menu-item:hover {
+            transform: scale(1.05); /* Slight zoom on hover */
+        }
+
+        .menu-item img {
+            width: 100%;
+            height: 150px; /* Smaller images for balance */
+            object-fit: cover;
+            border-radius: 8px;
+        }
+
+        .reserve-btn {
+            display: block;
+            background: #4CAF50; /* Green for Reserve Now */
+            color: #FFFFFF;
+            padding: 8px 16px;
+            text-decoration: none;
+            border-radius: 5px;
+            font-size: 14px;
+            margin-top: 10px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .reserve-btn::before,
+        .reserve-btn::after,
+        .reserve-btn span::before,
+        .reserve-btn span::after {
+            content: '';
+            position: absolute;
+            z-index: 1;
+        }
+
+        .reserve-btn::before {
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 2px;
+            background: linear-gradient(to right, transparent, #A5D6A7); /* Fading trail */
+            animation: borderTop 2s linear infinite;
+        }
+
+        .reserve-btn::after {
+            top: 0;
+            right: 0;
+            width: 2px;
+            height: 100%;
+            background: linear-gradient(to bottom, transparent, #A5D6A7); /* Fading trail */
+            animation: borderRight 2s linear infinite;
+            animation-delay: 0.5s;
+        }
+
+        .reserve-btn span::before {
+            bottom: 0;
+            right: 0;
+            width: 100%;
+            height: 2px;
+            background: linear-gradient(to left, transparent, #A5D6A7); /* Fading trail */
+            animation: borderBottom 2s linear infinite;
+            animation-delay: 1s;
+        }
+
+        .reserve-btn span::after {
+            bottom: 0;
+            left: 0;
+            width: 2px;
+            height: 100%;
+            background: linear-gradient(to top, transparent, #A5D6A7); /* Fading trail */
+            animation: borderLeft 2s linear infinite;
+            animation-delay: 1.5s;
+        }
+
+        .reserve-btn span {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+        }
+
+        #reservations form {
+            max-width: 500px;
+            margin: 0 auto;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        #reservations input {
+            padding: 10px;
+            border: 1px solid #333333;
+            border-radius: 5px;
+        }
+
+        #reservations button.reserve-btn {
+            background: #4CAF50; /* Green for "Book Now" */
+            color: #FFFFFF;
+            border: none;
+            padding: 8px 16px; /* Smaller button */
+            cursor: pointer;
+            border-radius: 5px;
+            font-size: 14px;
+        }
+
+        #reservations button.reserve-btn:hover {
+            background: #FF5733; /* Orange hover */
+        }
+
+        #contact p small {
+            font-size: 12px; /* Small text for (Example contact) */
+            color: #333333;
+        }
+
+        #contact iframe {
+            width: 100%;
+            max-width: 500px; /* Smaller map */
+            height: 300px; /* Reduced height for balance */
+            border: 0;
+        }
+
+        footer {
+            background: #333333;
+            color: #FFFFFF;
+            padding: 20px;
+            text-align: center;
+        }
+
+        footer p {
+            color: #FFFFFF; /* White for restaurant name in footer */
+            margin: 0;
+        }
+
+        @media (max-width: 768px) {
+            header {
+                height: 45vh; /* Smaller hero on mobile */
+                padding-top: 12vh; /* Tighter spacing */
+            }
+
+            .menu-item {
+                width: 100%; /* Full-width on mobile */
+                margin: 10px 0;
+            }
+
+            .menu-item img {
+                height: 120px; /* Even smaller images on mobile */
+            }
+
+            #contact iframe {
+                height: 250px; /* Smaller map on mobile */
+            }
+
+            .carousel-arrow {
+                padding: 8px;
+                font-size: 20px; /* Smaller arrows on mobile */
+            }
+        }
+    </style>
+</head>
+<body>
+    <nav>
+        <a href="#home">Home</a>
+        <a href="#menu">Menu</a>
+        <a href="#reservations">Reservations</a>
+        <a href="#contact">Contact</a>
+    </nav>
+    
+    <header id="home">
+        <div class="carousel">
+            <img src="https://images.unsplash.com/photo-1414235077428-338989a2e8c0" alt="Restaurant Hero 1" class="active">
+            <img src="https://images.unsplash.com/photo-1517248135467-0c93f7f8d7a1" alt="Restaurant Hero 2">
+            <img src="https://images.unsplash.com/photo-1550966871-3ed3cdb5ed0c" alt="Restaurant Hero 3">
+            <button class="carousel-arrow left">◄</button>
+            <button class="carousel-arrow right">►</button>
+            <div class="carousel-content">
+                <h1>Welcome to (Name)</h1>
+                <p>Experience the finest dishes in your city.</p>
+                <a href="#menu" class="order-now-btn"><span></span>Order Now</a>
+            </div>
+        </div>
+    </header>
+    
+    <section id="menu">
+        <h2>Our Menu</h2>
+        <div class="menu-item">
+            <img src="https://images.unsplash.com/photo-1565299624946-b28f40a0ae38" alt="Margherita Pizza">
+            <h3>Margherita Pizza</h3>
+            <p>Fresh tomatoes, mozzarella, basil. $15.99</p>
+            <a href="#reservations" class="reserve-btn"><span></span>Reserve Now</a>
+        </div>
+        <div class="menu-item">
+            <img src="https://images.unsplash.com/photo-1604382354936-07c5d9983bd3" alt="Pasta Alfredo">
+            <h3>Pasta Alfredo</h3>
+            <p>Creamy Alfredo sauce, parmesan, chicken. $18.99</p>
+            <a href="#reservations" class="reserve-btn"><span></span>Reserve Now</a>
+        </div>
+        <div class="menu-item">
+            <img src="https://images.unsplash.com/photo-1552611052-33e04a759683" alt="Caesar Salad">
+            <h3>Caesar Salad</h3>
+            <p>Romaine, croutons, Caesar dressing. $12.99</p>
+            <a href="#reservations" class="reserve-btn"><span></span>Reserve Now</a>
+        </div>
+        <div class="menu-item">
+            <img src="https://images.unsplash.com/photo-1568901346375-23c9450c58cd" alt="Classic Burger">
+            <h3>Classic Burger</h3>
+            <p>Beef patty, lettuce, tomato, cheddar. $14.99</p>
+            <a href="#reservations" class="reserve-btn"><span></span>Reserve Now</a>
+        </div>
+        <div class="menu-item">
+            <img src="https://images.unsplash.com/photo-1611273567871-6f6928742e2c" alt="Sushi Roll">
+            <h3>Sushi Roll</h3>
+            <p>Salmon, avocado, cucumber, soy sauce. $16.99</p>
+            <a href="#reservations" class="reserve-btn"><span></span>Reserve Now</a>
+        </div>
+        <div class="menu-item">
+            <img src="https://images.unsplash.com/photo-1563729782230-7e1e0ae3d34e" alt="Chocolate Cake">
+            <h3>Chocolate Cake</h3>
+            <p>Rich chocolate layers, creamy frosting. $9.99</p>
+            <a href="#reservations" class="reserve-btn"><span></span>Reserve Now</a>
+        </div>
+    </section>
+    
+    <section id="reservations">
+        <h2>Make a Reservation</h2>
+        <form id="reservation-form">
+            <input type="text" placeholder="Name" name="name" required>
+            <input type="email" placeholder="Email" name="email" required>
+            <input type="date" name="date" required>
+            <input type="time" name="time" required>
+            <input type="number" placeholder="Group Size" name="group_size" min="1" required>
+            <button type="submit" class="reserve-btn"><span></span>Book Now</button>
+        </form>
+    </section>
+    
+    <section id="contact">
+        <h2>Contact Us <small>(Example contact)</small></h2>
+        <p>123 Main St, Your City, State | (123) 456-7890 | andrewkyle251@gmail.com</p>
+        <iframe src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3153.086105614777!2d-122.41941568468192!3d37.77492977975966!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x8085808c1d9b7b5b%3A0x7b2d3d8a9c6b2f8c!2sSan%20Francisco%2C%20CA!5e0!3m2!1sen!2us!4v1635781234567" width="100%" height="300" style="border:0;" allowfullscreen="" loading="lazy"></iframe>
+    </section>
+    
+    <footer>
+        <p>&copy; 2025 (Name). All rights reserved.</p>
+    </footer>
+    
+    <script>
+        // Carousel functionality
+        const images = document.querySelectorAll('.carousel img');
+        const leftArrow = document.querySelector('.carousel-arrow.left');
+        const rightArrow = document.querySelector('.carousel-arrow.right');
+        let currentIndex = 0;
+
+        function showImage(index) {
+            images.forEach((img, i) => {
+                img.classList.toggle('active', i === index);
+            });
+        }
+
+        function nextImage() {
+            currentIndex = (currentIndex + 1) % images.length;
+            showImage(currentIndex);
+        }
+
+        function prevImage() {
+            currentIndex = (currentIndex - 1 + images.length) % images.length;
+            showImage(currentIndex);
+        }
+
+        // Auto-rotate every 5 seconds
+        let autoRotate = setInterval(nextImage, 5000);
+
+        // Arrow click events
+        rightArrow.addEventListener('click', () => {
+            clearInterval(autoRotate);
+            nextImage();
+            autoRotate = setInterval(nextImage, 5000);
+        });
+
+        leftArrow.addEventListener('click', () => {
+            clearInterval(autoRotate);
+            prevImage();
+            autoRotate = setInterval(nextImage, 5000);
+        });
+
+        // Reservation form submission with EmailJS
+        document.getElementById('reservation-form').addEventListener('submit', function(event) {
+            event.preventDefault();
+            emailjs.sendForm('YOUR_SERVICE_ID', 'YOUR_TEMPLATE_ID', this)
+                .then(() => {
+                    alert('Reservation submitted! Check your email for confirmation.');
+                }, (error) => {
+                    alert('Error sending reservation: ' + JSON.stringify(error));
+                });
+        });
+    </script>
+</body>
+</html>
